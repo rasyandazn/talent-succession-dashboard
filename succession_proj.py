@@ -24,6 +24,12 @@ try:
     # Baca langsung dari tabel SQL di Neon
     df_master = pd.read_sql_query("SELECT * FROM talent_master", engine)
     df_mobility = pd.read_sql_query("SELECT * FROM talent_mobility", engine)
+
+    # Re-create 'Grade_Num' column based on 'Job_Level_Grade'
+    if 'Job_Level_Grade' in df_master.columns:
+        df_master['Grade_Num'] = pd.to_numeric(df_master['Job_Level_Grade'], errors='coerce')
+    else:
+        df_master['Grade_Num'] = 3.0  # Nilai default cadangan
     
     print("🚀 Connection successful!")
 
