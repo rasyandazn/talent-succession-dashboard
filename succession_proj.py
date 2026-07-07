@@ -3,28 +3,36 @@ from dash import dcc, html, dash_table, Input, Output, callback_context
 import pandas as pd
 import plotly.express as px
 import dash_bootstrap_components as components # Pastikan sudah install dash-bootstrap-components
+import dash
+import dash_bootstrap_components as dbc
+import pandas as pd
+from sqlalchemy import create_engine
 
 # ==========================================
-# 1. INITIALIZATION & DATA LOADING
+# 1. INITIALIZE DASH & SERVER
 # ==========================================
-app = dash.Dash(__name__, external_stylesheets=[components.themes.FLATLY])
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 server = app.server
 
+# CONNECTION STRING TO NEON CLOUD DATABASE
+DATABASE_URL = "postgresql://neondb_owner:npg_ZL6MTFNnx4SH@ep-jolly-union-aojg4zdh.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+
 try:
-    # Read CSV files with UTF-8 encoding to avoid character issues
+    print("Attempting to connect to Neon Cloud Database...")
+    engine = create_engine(DATABASE_URL)
+    
+    # Baca langsung dari tabel SQL di Neon
+    df_master = pd.read_sql_query("SELECT * FROM talent_master", engine)
+    df_mobility = pd.read_sql_query("SELECT * FROM talent_mobility", engine)
+    
+    print("🚀 Connection successful!")
+
+# If connection fails, fallback to reading local CSV files
+except Exception as e:
+    print(f"❌ Failed to connect to Neon because: {e}")
+    # Emergency fallback: read from local CSV files
     df_master = pd.read_csv('df_master.csv', encoding='utf-8')
     df_mobility = pd.read_csv('df_mobility.csv', encoding='utf-8')
-    
-    # Convert 'Job_Level_Grade' to numeric, handling errors gracefully
-    if 'Job_Level_Grade' in df_master.columns:
-        df_master['Grade_Num'] = pd.to_numeric(df_master['Job_Level_Grade'], errors='coerce')
-    else:
-        df_master['Grade_Num'] = 3.0  # Nilai cadangan jika kolom tidak ditemukan sama sekali
-
-# If the CSV files are not found, initialize empty DataFrames with the expected structure        
-except FileNotFoundError:
-    df_master = pd.DataFrame(columns=['Employee_ID', 'Full_Name', 'Current_Position', 'Department', 'Job_Level_Grade', 'Grade_Num', 'Territory_Region', 'Age', 'Retirement_Horizon', 'Mobility_Transferability', 'Assigned_Unit_Type'])
-    df_mobility = pd.DataFrame(columns=['Employee_ID', 'Past_Department'])
     
 # ==========================================
 # 2. BACKEND ENGINE FUNCTIONS 
